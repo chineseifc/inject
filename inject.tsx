@@ -7,19 +7,19 @@ export const Connect = () => {
   const { connectAsync } = useConnect();
   const { address } = useAccount();
   const { disconnectAsync } = useDisconnect();
-  const [connecting, setConnecting] = useState(false); // 添加了连接状态的状态变量
-  const [disconnecting, setDisconnecting] = useState(false); // 添加了断开连接状态的状态变量
+  const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [errors, setErrors] = useState<string | undefined>(undefined);
 
   const handleConnect = async () => {
     try {
       setErrors('');
       setConnecting(true); // 开始连接操作
-      if (!address) {
-        await connectAsync({ chainId: bscTestnet.id, connector: injected() });       
+      if (address) {
+        await disconnectAsync();
         setDisconnecting(false); // 设置断开连接状态为 false
       } else {
-        await disconnectAsync();
+        await connectAsync({ chainId: bscTestnet.id, connector: injected() });
         setConnecting(false); // 设置连接状态为 false
       }
     } catch (err) {
@@ -28,22 +28,34 @@ export const Connect = () => {
       setErrors("Connection failed. Please try again.");
     }
   };
+
   return (
     <>
       {!address && (
         <button 
-          disabled={connecting || disconnecting} // 根据连接或断开连接状态来禁用按钮
+          disabled={connecting || disconnecting}
           onClick={handleConnect}
         >
-          {connecting ? "Connecting..." : "Connect"} {/* 根据连接状态显示相应的文本 */}
+          {connecting ? "Connecting..." : "Connect"}
         </button>
       )}
       {address && (
         <button 
-        //   disabled={connecting || disconnecting} // 根据连接或断开连接状态来禁用按钮
-          onClick={handleConnect}
+          disabled={connecting || disconnecting}
+          onClick={async () => {
+            try {
+              setErrors('');
+              setDisconnecting(true); // 开始断开连接操作
+              await disconnectAsync();
+              setDisconnecting(false); // 设置断开连接状态为 false
+            } catch (err) {
+              console.log(err);
+              setDisconnecting(false);
+              setErrors("Disconnection failed. Please try again.");
+            }
+          }}
         >
-          {disconnecting ? "Disconnecting..." : "Disconnect"} {/* 根据断开连接状态显示相应的文本 */}
+          {disconnecting ? "Disconnecting..." : "Disconnect"}
         </button>
       )}
       {errors && <p>{errors}</p>}
